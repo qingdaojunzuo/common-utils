@@ -55,7 +55,7 @@ Bundle 'digitaltoad/vim-jade'
 Bundle 'itspriddle/vim-jquery'
 Bundle 'nelstrom/vim-textobj-rubyblock'
 Bundle 'kana/vim-textobj-user'
-Bundle 'Valloric/YouCompleteMe'
+"Bundle 'Valloric/YouCompleteMe'
 Bundle 'flazz/vim-colorschemes'
 Bundle 'fholgado/minibufexpl.vim'
 Bundle 'ternjs/tern_for_vim'
@@ -138,6 +138,7 @@ let g:ycm_confirm_extra_conf = 0
 let g:ycm_seed_identifiers_with_syntax=1
 let g:ycm_key_invoke_completion = '<M-;>'
 let g:ycm_collect_identifiers_from_tags_files = 1
+let g:ycm_python_binary_path = '/usr/bin/python3'
 nmap <M-g> :YcmCompleter GoToDefinitionElseDeclaration <C-R>=expand("<cword>")<CR><CR>
 
 " switch between *.c and *.h
