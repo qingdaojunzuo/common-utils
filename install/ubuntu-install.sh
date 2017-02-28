@@ -6,6 +6,9 @@ apt-get install -y nodejs vsftpd git golang clang python-dev \
   python3-dev build-essential cmake vim docker.io npm python-pip \
   ctags cscope ssh
 
+if [[ -e /usr/bin/node ]]; then
+  rm -rf /usr/bin/node
+fi
 ln -s /usr/bin/nodejs /usr/bin/node
 
 pip install --upgrade pip
