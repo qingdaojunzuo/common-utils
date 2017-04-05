@@ -11,7 +11,7 @@ yum-config-manager --add-repo \
 yum remove -y vim-minimal
 
 yum groupinstall -y 'Development Tools'
-yum install -y nodejs vsftpd git golang clang python-devel.x86_64 \
+yum install -y sudo nodejs vsftpd git golang clang python-devel.x86_64 \
   python34-devel.x86_64 cmake vim docker npm python2-pip.noarch python34-pip.noarch \
   ctags cscope ssh
 
