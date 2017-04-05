@@ -2,9 +2,12 @@
 
 set -eo pipefail
 
+add-apt-repository ppa:jonathonf/vim
+apt-get update
+
 apt-get install -y nodejs vsftpd git golang clang python-dev \
   python3-dev build-essential cmake vim docker.io npm python-pip \
-  ctags cscope ssh
+  ctags cscope ssh vim-nox
 
 if [[ -e /usr/bin/node ]]; then
   rm -rf /usr/bin/node

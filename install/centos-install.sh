@@ -3,6 +3,12 @@
 set -eo pipefail
 
 yum install -y epel-release
+yum install -y yum-utils
+
+# vim 8 on centos7
+yum-config-manager --add-repo \
+  https://copr.fedorainfracloud.org/coprs/mcepl/vim8/repo/epel-7/mcepl-vim8-epel-7.repo
+yum remove -y vim-minimal
 
 yum groupinstall -y 'Development Tools'
 yum install -y nodejs vsftpd git golang clang python-devel.x86_64 \
