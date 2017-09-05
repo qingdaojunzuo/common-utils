@@ -71,7 +71,8 @@ Bundle 'elzr/vim-json'
 Bundle 'derekwyatt/vim-scala'
 
 call vundle#end()
-filetype plugin indent on
+" filetype plugin indent on
+filetype plugin on
 
 colorscheme badwolf "Tomorrow-Night-Eighties
 
