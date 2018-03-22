@@ -3,6 +3,7 @@ set nu
 set hlsearch
 set cursorline
 set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
+set backspace=indent,eol,start
 set sw=2
 hi CursorLine cterm=underline
 hi Search cterm=bold,underline ctermbg=darkblue ctermfg=darkblue guibg=darkblue guifg=white

@@ -2,27 +2,50 @@
 
 set -eo pipefail
 
-yum install -y epel-release
-yum install -y yum-utils
+. .functions
 
-# vim 8 on centos7
-yum-config-manager --add-repo \
-  https://copr.fedorainfracloud.org/coprs/mcepl/vim8/repo/epel-7/mcepl-vim8-epel-7.repo
-yum remove -y vim-minimal
+usage() {
+  echo "Usage: $0 [-h] [-p proxy] ${I_ALL}|all"
+  echo ""
+  echo "  -h|--help,   print usage"
+  echo "  -p|--proxy,  proxy server"
+  echo ""
+  exit 0
+}
 
-yum groupinstall -y 'Development Tools'
-yum install -y sudo nodejs vsftpd git golang clang python-devel.x86_64 \
-  python34-devel.x86_64 cmake vim docker-1.12.6 npm python2-pip.noarch python34-pip.noarch \
-  ctags cscope ssh
+while [[ $# -gt 0 ]]; do
+o=$1
+case "$o" in
+  -h|--help)  usage ;;
+  -p|--proxy) G_PROXY="$2"; shift ;;
+  *) G_RUNS="$o,$G_RUNS" ;;
+esac
+shift
+done
 
-pip install --upgrade pip
-pip install --upgrade virtualenv
-pip install pika
+G_RUNS=${G_RUNS::-1}
+[ -z "$G_RUNS" ] && usage
+[ "$G_RUNS" = "all" ] && G_RUNS="$I_ALL"
 
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+i_common() {
+  sudo yum install -y epel-release yum-utils
+  sudo yum groupinstall -y 'Development Tools'
+  sudo yum install -y sudo nodejs vsftpd git \
+    clang cmake ctags cscope ssh screen \
+    htop iotop wget zlib-devel ncurses-devel \
+    openssl-devel
+}
 
-git clone https://github.com/Valloric/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
-cd ~/.vim/bundle/YouCompleteMe
-npm install typescript
-git submodule update --init --recursive
-./install.py --clang-completer --gocode-completer --tern-completer
+i_pre
+i_common
+IFS=',' read -ra runs <<< "$G_RUNS"
+for i in ${runs[@]}; do
+  _run=I_${i^^}
+  if [[ -z "${!_run}" ]]; then
+    echo "[$i] can't find, please choose following ones to install, [$I_ALL]"
+    exit 1
+  fi
+done
+i_runs ${runs[@]}
+i_export_envs
+i_post
