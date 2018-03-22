@@ -33,7 +33,7 @@ i_common() {
   sudo yum install -y sudo nodejs vsftpd git \
     clang cmake ctags cscope ssh screen \
     htop iotop wget zlib-devel ncurses-devel \
-    openssl-devel
+    openssl-devel python-devel python3*-devel
 }
 
 i_pre

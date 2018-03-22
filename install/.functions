@@ -24,8 +24,8 @@ I_PY2="bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz,run=i_build,
 I_JAVA="bin=--no-check-certificate -c --header \"Cookie: oraclelicense=accept-securebackup-cookie\" \
   http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz"
 I_VIM="bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2,run=i_bin_vim,zip=bz2,b-conf=--with-features=huge --enable-multibyte \
-  --enable-rubyinterp=yes --enable-pythoninterp=yes --with-python-config-dir=$I_HOME/py2/lib/python2.7/config --enable-python3interp=yes \
-  --with-python3-config-dir=$I_HOME/py3/lib/python3.6/config-3.6m-x86_64-linux-gnu --enable-luainterp=yes --enable-cscope"
+  --enable-rubyinterp=yes --enable-pythoninterp=yes --with-python-config-dir=$(find $I_HOME/py2/lib/python* -maxdepth 1 -type d -name config*) --enable-python3interp=yes \
+  --with-python3-config-dir=$(find $I_HOME/py3/lib/python* -maxdepth 1 -type d -name config*) --enable-luainterp=yes --enable-cscope"
 
 i_add_folder()  { if [[ ! -e "$1" ]]; then mkdir -p "$1"; fi; }
 i_add_folders() { for f in "$@"; do i_add_folder "$f"; done; }
@@ -54,7 +54,7 @@ i_get_key() {
     local flag="${p%%=*}"
     local val="${p#*=}"
     [ "$flag" != "$2" ] && continue
-    ret="$val"
+    ret="$(echo $val)"
     break
   done
   echo "$ret"
@@ -62,11 +62,11 @@ i_get_key() {
 
 i_proxy() {
   if [[ -n "$G_PROXY" ]]; then
-    export http_proxy=$G_PROXY https_proxy=$G_PROXY
+    export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY
   fi
   if [[ ! -e "$I_PROXY" && -n "$G_PROXY" ]]; then
     echo "#!/bin/bash" >> "$I_PROXY"
-    echo "export http_proxy=$G_PROXY https_proxy=$G_PROXY" >> "$I_PROXY"
+    echo "export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY" >> "$I_PROXY"
     echo "bash" >> "$I_PROXY"
     chmod +x "$I_PROXY"
   fi
@@ -123,7 +123,7 @@ i_vim_adv() {
     cd "$I_VIM_YCM"
     npm install typescript
     git submodule update --init --recursive
-    "$I_HOME"/py3/bin/python3.6 install.py --clang-completer --go-completer --js-completer --java-completer
+    python3.6 install.py --clang-completer --go-completer --js-completer --java-completer
     cd -
   fi
 }
