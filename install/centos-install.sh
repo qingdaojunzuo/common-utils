@@ -46,6 +46,6 @@ for i in ${runs[@]}; do
     exit 1
   fi
 done
+i_export_envs ${runs[@]}
 i_runs ${runs[@]}
-i_export_envs
 i_post
