@@ -1,8 +1,13 @@
 #!/bin/bash
 
-set -eo pipefail
-
 . .functions
+
+I_DOCKER_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
+I_DOCKER='run=i_docker'
+I_DOCKER_VER="18.03.0"
+
+I_DOCKER_ETC=/etc/docker
+I_DOCKER_DAEMON=../docker/daemon.json
 
 usage() {
   echo "Usage: $0 [-h] [-p proxy] ${I_ALL}|all"
@@ -34,6 +39,23 @@ i_common() {
     clang cmake ctags cscope ssh screen \
     htop iotop wget zlib-devel ncurses-devel \
     openssl-devel python-devel python3*-devel
+}
+
+i_docker() {
+  which docker
+  if [ $? -ne 0 ]; then
+    sudo yum install -y device-mapper-persistent-data lvm2
+    wget $I_DOCKER_REPO
+    sudo mv docker-ce.repo /etc/yum.repos.d/
+    sudo yum install -y docker-ce-${I_DOCKER_VER}.ce
+    sudo mkdir -p "$I_DOCKER_ETC"
+    if [[ ! -e "${I_DOCKER_ETC}/daemon.json" ]]; then
+      sudo cp "$I_DOCKER_DAEMON" "${I_DOCKER_ETC}/daemon.json"
+    fi
+    sudo systemctl start docker
+  else
+    echo "find installed docker, skip it ..." >&2
+  fi
 }
 
 i_pre

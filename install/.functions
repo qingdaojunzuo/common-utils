@@ -1,6 +1,6 @@
 #!/bin/bash
 
-I_ALL="go,py2,py3,java,vim"
+I_ALL="go,py2,py3,java,vim,docker"
 
 I_HOME=$(echo ~)/.lib
 I_HOME_LIB="$I_HOME/lib/bin"
@@ -18,14 +18,14 @@ I_VIM_YCM=$(echo ~)/.vim/bundle/YouCompleteMe
 
 I_VIMRC=../vim/.vimrc
 
-I_GO="bin=https://dl.google.com/go/go1.10.linux-amd64.tar.gz"
-I_PY3="bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared,b-make=altinstall"
-I_PY2="bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared,b-make=altinstall"
-I_JAVA="bin=--no-check-certificate -c --header \"Cookie: oraclelicense=accept-securebackup-cookie\" \
-  http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz"
-I_VIM="bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2,run=i_bin_vim,zip=bz2,b-conf=--with-features=huge --enable-multibyte \
+I_GO='bin=https://dl.google.com/go/go1.10.linux-amd64.tar.gz'
+I_PY3='bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared,b-make=altinstall,post=i_py3_post'
+I_PY2='bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared --with-ensurepip=install'
+I_JAVA='bin=--no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" \
+  http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'
+I_VIM='bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2,run=i_bin_vim,zip=bz2,b-conf=--with-features=huge --enable-multibyte \
   --enable-rubyinterp=yes --enable-pythoninterp=yes --with-python-config-dir=$(find $I_HOME/py2/lib/python* -maxdepth 1 -type d -name config*) --enable-python3interp=yes \
-  --with-python3-config-dir=$(find $I_HOME/py3/lib/python* -maxdepth 1 -type d -name config*) --enable-luainterp=yes --enable-cscope"
+  --with-python3-config-dir=$(find $I_HOME/py3/lib/python* -maxdepth 1 -type d -name config*) --enable-luainterp=yes --enable-cscope'
 
 i_add_folder()  { if [[ ! -e "$1" ]]; then mkdir -p "$1"; fi; }
 i_add_folders() { for f in "$@"; do i_add_folder "$f"; done; }
@@ -33,8 +33,22 @@ i_get()         { local v=I_${1^^}; local ret=$(i_get_key "$(IFS= echo ${!v})" $
 i_bin()         { echo "$(i_get $1 bin)"; }
 i_zip()         { local zip="$(i_get $1 zip)"; echo "${zip:-zip}"; }
 i_home()        { local home="$(i_get $1 home)"; echo "${home:-$I_HOME}"; }
-i_run()         { local run="$(i_get $1 run)"; eval "${run:-i_binary}" "$1"; }
 i_runs()        { for m in "$@"; do i_run "$m"; done; }
+
+i_run() { 
+  local run="$(i_get $1 run)"
+  eval "${run:-i_binary}" "$1"
+  local post="$(i_get $1 post)"
+  [[ -n "$post" ]] && eval "$post"
+}
+
+i_pip_U() {
+  for i in "$@"; do
+    local pip=$(eval "i_$i")
+    echo "$pip" >&2
+    [[ -n "$pip" ]] && $pip install --upgrade pip
+  done
+}
 
 i_pre()  {
   i_add_folders "$I_HOME_LIB" "$I_TMP"
@@ -47,6 +61,9 @@ i_post() {
   rm -rf "$I_TMP"
 }
 
+i_py3_post() { i_pip_U pip3; }
+i_py2_post() { i_pip_U pip2; }
+
 i_get_key() {
   local ret=
   IFS=',' read -ra t <<< "$1"
@@ -54,7 +71,7 @@ i_get_key() {
     local flag="${p%%=*}"
     local val="${p#*=}"
     [ "$flag" != "$2" ] && continue
-    ret="$(echo $val)"
+    ret=$(eval echo "$val")
     break
   done
   echo "$ret"
@@ -77,6 +94,19 @@ uncompress() {
     tar xzvf "$2" --strip-components 1 -C "$3"
   elif [ "$1" = "bz2" ]; then
     tar xjvf "$2" --strip-components 1 -C "$3"
+  fi
+}
+
+i_pip2() { echo "$(find $I_HOME/py2/bin -name pip2\.[0-9])"; }
+i_pip3() { echo "$(find $I_HOME/py3/bin -name pip3\.[0-9])"; }
+i_py2()  { echo "$(find $I_HOME/py2/bin -name python2\.[0-9])"; }
+i_py3()  { echo "$(find $I_HOME/py3/bin -name python3\.[0-9])"; }
+i_get_py() {
+  local py3=$(i_py3)
+  if [[ -n "$py3" ]]; then
+    echo "$py3"
+  else
+    echo $(i_py2)
   fi
 }
 
@@ -123,7 +153,12 @@ i_vim_adv() {
     cd "$I_VIM_YCM"
     npm install typescript
     git submodule update --init --recursive
-    python3.6 install.py --clang-completer --go-completer --js-completer --java-completer
+    local py=$(i_get_py)
+    if [[ -n "$py" ]]; then
+      $py install.py --clang-completer --go-completer --js-completer --java-completer
+    else
+      echo "no python found to install YCM" >&2
+    fi
     cd -
   fi
 }
