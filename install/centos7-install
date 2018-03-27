@@ -58,7 +58,7 @@ i_docker_() {
   sudo wget $I_DOCKER_REPO -O /etc/yum.repos.d/docker-ce.repo
   sudo yum install -y docker-ce-${I_DOCKER_VER}.ce
   sudo mkdir -p "$I_DOCKER_ETC"
-  f_copy "$I_DOCKER_DAEMON" "$I_DOCKER_ETC/daemon.json"
+  f_copy_sudo "$I_DOCKER_DAEMON" "$I_DOCKER_ETC/daemon.json"
   sudo systemctl start docker
 }
 

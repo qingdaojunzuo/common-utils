@@ -47,7 +47,8 @@ f_add_to_file() {
     sed -i 's#'"^export $1.*$"'#export '"$1=$2"'#' "$3"
   fi
 }
-f_copy() { if [[ -e "$1" && ! -e "$2" ]]; then sudo cp "$1" "$2"; fi; }
+f_copy()      { if [[ -e "$1" && ! -e "$2" ]]; then cp "$1" "$2"; fi; }
+f_copy_sudo() { if [[ -e "$1" && ! -e "$2" ]]; then sudo cp "$1" "$2"; fi; }
 f_unpack() {
   if [ "$1" = "zip" ]; then 
     tar xzf "$2" --strip-components 1 -C "$3"
