@@ -1,0 +1,123 @@
+#!/bin/bash
+
+I_ALL="go,py2,py3,java,vim,docker"
+
+I_U_HOME=$(echo ~)
+I_HOME=$I_U_HOME/.lib
+
+I_TMP=/tmp/.lib
+I_TMP_BUILD=$I_TMP/build
+I_TMP_BIN=$I_TMP/tmp.tar.gz
+
+I_D=";"
+
+I_GO='bin=https://dl.google.com/go/go1.10.linux-amd64.tar.gz'${I_D}'run=i_go_'
+I_PY3='bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz'${I_D}'b-conf=--enable-optimizations --enable-shared'${I_D}'b-make=install'${I_D}'run=i_py3_'${I_D}
+I_PY2='bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz'${I_D}'run=i_py2_'${I_D}'b-conf=--enable-shared --with-ensurepip=install --enable-unicode=ucs4'${I_D}
+I_JAVA='bin=--no-check-certificate -c --header \"Cookie: oraclelicense=accept-securebackup-cookie\" http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'
+I_VIM='bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2'${I_D}'run=i_vim_'${I_D}'zip=bz2'${I_D}'b-conf=--with-features=huge --enable-perlinterp=yes --enable-multibyte --enable-cscope --enable-luainterp=yes --enable-rubyinterp=yes $(i_vim_py)'
+
+. .functions
+
+i_add_to_librc() { f_add_to_file "$1" "$2" "$I_U_HOME/.librc"; }
+
+i_proxy() {
+  f_add_folder "$I_HOME/lib/bin/"
+  local f_proxy="$I_HOME/lib/bin/proxy"
+  export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY
+  if [[ ! -e "$f_proxy" && -n "$G_PROXY" ]]; then
+    sed 's#$G_PROXY#'$G_PROXY'#g' ../proxy/proxy > "$f_proxy"
+    chmod +x "$f_proxy"
+  fi
+}
+
+i_export_envs() {
+  for e in $(ls $I_HOME); do
+    i_add_to_librc "${e^^}_HOME" "$I_HOME/$e"
+  done
+  local p=
+  for f in $(find "$I_HOME"/* -maxdepth 0 -type d); do
+    p="$f/bin:$p"
+  done
+  i_add_to_librc "PATH" "$p\$PATH"
+  if [ $(grep "librc" ~/.bashrc | wc -l) -eq 0 ]; then
+    echo ". ~/.librc" >> ~/.bashrc
+  fi
+  . ~/.bashrc
+}
+
+i_pre() {
+  f_add_folders "$I_TMP"
+  [ ! -e ~/.librc ] && touch ~/.librc
+  . ~/.librc
+  i_proxy
+}
+i_post() { 
+  f_copy ../git/.gitconfig ~/.gitconfig
+  i_export_envs
+  rm -rf "$I_TMP"
+}
+
+i_which_py() {
+  local py=
+  [[ -e "$I_HOME/py2" ]] && py="python"
+  [[ -e "$I_HOME/py3" ]] && py="python3"
+  echo "$py"
+}
+
+i_py_post() {
+  local home="$I_HOME/$1"
+  export PYTHONHOME="$home"
+  [[ ! -e "$home/lib64" ]] && ln -s "$home/lib" "$home/lib64"
+  $(find "$home/bin" -name pip[0-9]\.[0-9]) install -U pip
+  unset PYTHONHOME 
+}
+i_vim_py() {
+  local py=
+  if [[ -e "$I_HOME/py2" ]]; then
+    local py2=$(find $I_HOME/py2/lib64/python* -maxdepth 1 -type d -name "config*")
+    py="$py --enable-pythoninterp=yes --with-python-config-dir=$py2"
+  fi
+  if [[ -e "$I_HOME/py3" ]]; then
+    local py3=$(find $I_HOME/py3/lib64/python* -maxdepth 1 -type d -name "config*")
+    py="$py --enable-python3interp=yes --with-python3-config-dir=$py3"
+  fi
+  echo "$py"
+}
+
+i_py2_() {
+  f_build py2
+  i_py_post py2
+}
+i_py3_() {
+  f_build py3
+  i_py_post py3
+}
+i_go_() {
+  f_binary go
+  f_add_folder "$I_HOME/go/path"
+  i_add_to_librc "GOPATH" "$I_HOME/go/path"
+}
+i_vim_() {
+  f_build vim
+  i_vim_adv_
+  f_copy ../vim/.vimrc "$I_U_HOME/.vimrc"
+}
+i_vim_vundle_() { git clone "https://github.com/VundleVim/Vundle.vim.git" ~/.vim/bundle/Vundle.vim; }
+i_vim_ycm_() {
+  git clone "https://github.com/Valloric/YouCompleteMe.git" ~/.vim/bundle/YouCompleteMe
+  cd ~/.vim/bundle/YouCompleteMe
+  npm install typescript; git submodule update --init --recursive
+  local py_cmd=$(i_which_py)
+  if [[ -n "$py_cmd" ]]; then
+    $py_cmd install.py --clang-completer --go-completer \
+      --js-completer --java-completer
+  else
+    echo "no python found to install YCM" >&2
+  fi
+  cd -
+}
+i_vim_adv_() {
+  [[ ! -e "$I_VIM_VUNDLE" ]] && i_vim_vundle_
+  [[ ! -e "$I_VIM_YCM" ]] && i_vim_ycm_
+}

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+F_GO_REQ=go-requirement.txt
+F_PY2_REQ=py2-requirement.txt
+F_PY3_REQ=py3-requirement.txt
+
+f_exists() {
+  which "$1" > /dev/null 2>&1
+  echo $?
+}
+
+f_pack_go() {
+  export GOPATH=${GOPATH:-$GO_HOME/path}
+  while IFS='' read -r line || [[ -n "$line" ]]; do
+    go get -u $line
+  done < "$F_GO_REQ"
+}
+
+[[ $(f_exists go) -eq 0 && -e "$F_GO_REQ" ]] && f_pack_go
+[[ $(f_exists pip2) -eq 0 && -e "$F_PY2_REQ" ]] && pip2 install -r "$F_PY2_REQ"
+[[ $(f_exists pip3) -eq 0 && -e "$F_PY3_REQ" ]] && pip3 install -r "$F_PY3_REQ"

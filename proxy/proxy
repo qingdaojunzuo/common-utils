@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY
+bash

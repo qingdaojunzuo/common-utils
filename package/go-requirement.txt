@@ -1,0 +1,2 @@
+golang.org/x/lint/golint
+github.com/kisielk/errcheck

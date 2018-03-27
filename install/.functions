@@ -1,174 +1,72 @@
 #!/bin/bash
 
-I_ALL="go,py2,py3,java,vim,docker"
+f_add_folder()  { if [[ ! -e "$1" ]]; then mkdir -p "$1"; fi; }
+f_add_folders() { for f in "$@"; do f_add_folder "$f"; done; }
 
-I_HOME=$(echo ~)/.lib
-I_HOME_LIB="$I_HOME/lib/bin"
-I_PROXY="$I_HOME_LIB/proxy"
-
-I_TMP=/tmp/.lib
-I_TMP_BUILD=$I_TMP/.build
-I_TMP_PY=$I_TMP/.py
-I_TMP_BIN=$I_TMP/tmp.tar.gz
-
-I_GIT_VUNDLE="https://github.com/VundleVim/Vundle.vim.git"
-I_VIM_VUNDLE=$(echo ~)/.vim/bundle/Vundle.vim
-I_GIT_YCM="https://github.com/Valloric/YouCompleteMe.git"
-I_VIM_YCM=$(echo ~)/.vim/bundle/YouCompleteMe
-
-I_VIMRC=../vim/.vimrc
-
-I_GO='bin=https://dl.google.com/go/go1.10.linux-amd64.tar.gz'
-I_PY3='bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared,b-make=altinstall,post=i_py3_post'
-I_PY2='bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz,run=i_build,b-conf=--enable-optimizations --enable-shared --with-ensurepip=install'
-I_JAVA='bin=--no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" \
-  http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'
-I_VIM='bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2,run=i_bin_vim,zip=bz2,b-conf=--with-features=huge --enable-multibyte \
-  --enable-rubyinterp=yes --enable-pythoninterp=yes --with-python-config-dir=$(find $I_HOME/py2/lib/python* -maxdepth 1 -type d -name config*) --enable-python3interp=yes \
-  --with-python3-config-dir=$(find $I_HOME/py3/lib/python* -maxdepth 1 -type d -name config*) --enable-luainterp=yes --enable-cscope'
-
-i_add_folder()  { if [[ ! -e "$1" ]]; then mkdir -p "$1"; fi; }
-i_add_folders() { for f in "$@"; do i_add_folder "$f"; done; }
-i_get()         { local v=I_${1^^}; local ret=$(i_get_key "$(IFS= echo ${!v})" $2); echo "$ret"; }
-i_bin()         { echo "$(i_get $1 bin)"; }
-i_zip()         { local zip="$(i_get $1 zip)"; echo "${zip:-zip}"; }
-i_home()        { local home="$(i_get $1 home)"; echo "${home:-$I_HOME}"; }
-i_runs()        { for m in "$@"; do i_run "$m"; done; }
-
-i_run() { 
-  local run="$(i_get $1 run)"
-  eval "${run:-i_binary}" "$1"
-  local post="$(i_get $1 post)"
-  [[ -n "$post" ]] && eval "$post"
-}
-
-i_pip_U() {
-  for i in "$@"; do
-    local pip=$(eval "i_$i")
-    echo "$pip" >&2
-    [[ -n "$pip" ]] && $pip install --upgrade pip
-  done
-}
-
-i_pre()  {
-  i_add_folders "$I_HOME_LIB" "$I_TMP"
-  i_proxy
-}
-i_post() {
-  if [[ ! -e ~/.gitconfig && -e ../git/.gitconfig ]]; then
-    cp ../git/.gitconfig ~/.gitconfig
-  fi
-  rm -rf "$I_TMP"
-}
-
-i_py3_post() { i_pip_U pip3; }
-i_py2_post() { i_pip_U pip2; }
-
-i_get_key() {
+f_get_key() {
   local ret=
-  IFS=',' read -ra t <<< "$1"
+  IFS=$I_D read -ra t <<< "$1"
   for p in "${t[@]}"; do
-    local flag="${p%%=*}"
-    local val="${p#*=}"
-    [ "$flag" != "$2" ] && continue
-    ret=$(eval echo "$val")
+    [ "${p%%=*}" != "$2" ] && continue
+    ret=$(eval echo ${p#*=})
     break
   done
   echo "$ret"
 }
-
-i_proxy() {
-  if [[ -n "$G_PROXY" ]]; then
-    export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY
-  fi
-  if [[ ! -e "$I_PROXY" && -n "$G_PROXY" ]]; then
-    echo "#!/bin/bash" >> "$I_PROXY"
-    echo "export http_proxy=$G_PROXY https_proxy=$G_PROXY ftp_proxy=$G_PROXY" >> "$I_PROXY"
-    echo "bash" >> "$I_PROXY"
-    chmod +x "$I_PROXY"
-  fi
+f_get() { 
+  local v=I_${1^^}
+  local ret=$(f_get_key "$(IFS= echo ${!v})" $2)
+  echo "${ret:-$3}"
 }
 
-uncompress() {
-  if [ "$1" = "zip" ]; then 
-    tar xzvf "$2" --strip-components 1 -C "$3"
-  elif [ "$1" = "bz2" ]; then
-    tar xjvf "$2" --strip-components 1 -C "$3"
-  fi
+f_exists() {
+  local home="$(f_get $1 home $I_HOME)/$1"
+  [[ -e "$home" ]] && echo 1
+  [[ ! -e "$home" ]] && echo 0 
 }
-
-i_pip2() { echo "$(find $I_HOME/py2/bin -name pip2\.[0-9])"; }
-i_pip3() { echo "$(find $I_HOME/py3/bin -name pip3\.[0-9])"; }
-i_py2()  { echo "$(find $I_HOME/py2/bin -name python2\.[0-9])"; }
-i_py3()  { echo "$(find $I_HOME/py3/bin -name python3\.[0-9])"; }
-i_get_py() {
-  local py3=$(i_py3)
-  if [[ -n "$py3" ]]; then
-    echo "$py3"
+f_run() { 
+  local run="$(f_get $1 run)"
+  local exist=$(eval "$(f_get $1 check f_exists)" "$1")
+  if [ $exist -eq 1 ]; then
+    echo "[$1] installed, skip it ..."
   else
-    echo $(i_py2)
-  fi
-}
-
-i_binary() {
-  local folder="$(i_home $1)/$1"
-  if [[ ! -e "$folder" ]]; then
-    eval $(echo "wget $(i_bin $1) -O $I_TMP_BIN")
-    i_add_folder "$folder"
-    uncompress "$(i_zip $1)" "$I_TMP_BIN" "$folder"
-    rm -rf $I_TMP_BIN
-  else
-    echo "$1 has been installed, skip it..." >&2
-  fi
-}
-i_build() {
-  local home="$(i_home $1)/$1"
-  if [[ ! -e "$home" ]]; then
-    eval $(echo "wget $(i_bin $1) -O $I_TMP_BIN")
-    i_add_folders "$I_TMP_BUILD" "$home"
-    uncompress "$(i_zip $1)" "$I_TMP_BIN" "$I_TMP_BUILD"
-    echo $I_TMP_BUILD
-    cd "$I_TMP_BUILD"
-    ./configure --prefix="$home" $(echo $(i_get $1 b-conf))
-    local b_make=$(i_get $1 b-make)
-    echo ${b_make}
-    make ${b_make:-install}
-    cd -
-    rm -rf "$I_TMP_BUILD" "$I_TMP_BIN"
-  else
-    echo "$1 has been installed, skip it..." >&2
-  fi
-}
-i_bin_vim() {
-  i_build vim
-  i_vim_adv
-  [[ -e "$I_VIMRC" ]] && cp "$I_VIMRC" ~/.vimrc
-}
-i_vim_adv() {
-  if [[ ! -e "$I_VIM_VUNDLE" ]]; then
-    git clone "$I_GIT_VUNDLE" "$I_VIM_VUNDLE"
-  fi
-  if [[ ! -e "$I_VIM_YCM" ]]; then
-    git clone "$I_GIT_YCM" "$I_VIM_YCM"
-    cd "$I_VIM_YCM"
-    npm install typescript
-    git submodule update --init --recursive
-    local py=$(i_get_py)
-    if [[ -n "$py" ]]; then
-      $py install.py --clang-completer --go-completer --js-completer --java-completer
-    else
-      echo "no python found to install YCM" >&2
+    f_add_folders "$I_TMP_BUILD"
+    eval "${run:-f_binary}" "$1"
+    rm -rf "$I_TMP_BIN" "$I_TMP_BUILD"
+    if [[ -e "$I_HOME/$1/bin" ]]; then
+      export PATH="$I_HOME/$1/bin":$PATH
     fi
-    cd -
   fi
 }
-i_export_envs() {
-  local p=
-  for e in "$@" "lib"; do
-    [ $(grep "${e^^}_HOME" ~/.bashrc | wc -l) -gt 0 ] && continue
-    echo "export ${e^^}_HOME=$I_HOME/$e" >> ~/.bashrc
-    p="\$${e^^}_HOME/bin:""$p"
-  done
-  [ -n "$p" ] && echo "export PATH=$p\$PATH" >> ~/.bashrc
-  source ~/.bashrc
+f_runs() { for m in "$@"; do f_run "$m"; done; }
+
+f_add_to_file() {
+  if [ $(grep "export $1" "$3" | wc -l) -le 0 ]; then
+    echo "export $1=$2" >> "$3"
+  else
+    sed -i 's#'"^export $1.*$"'#export '"$1=$2"'#' "$3"
+  fi
+}
+f_copy() { if [[ -e "$1" && ! -e "$2" ]]; then sudo cp "$1" "$2"; fi; }
+f_unpack() {
+  if [ "$1" = "zip" ]; then 
+    tar xzf "$2" --strip-components 1 -C "$3"
+  elif [ "$1" = "bz2" ]; then
+    tar xjf "$2" --strip-components 1 -C "$3"
+  fi
+}
+
+f_binary() {
+  f_add_folder "$(f_get $1 home $I_HOME)/$1"
+  eval $(echo "wget $(f_get $1 bin) -O $I_TMP_BIN")
+  f_unpack "$(f_get $1 zip zip)" "$I_TMP_BIN" "$(f_get $1 home $I_HOME)/$1"
+}
+f_build() {
+  f_add_folder "$(f_get $1 home $I_HOME)/$1"
+  eval $(echo "wget $(f_get $1 bin) -O $I_TMP_BIN")
+  f_unpack "$(f_get $1 zip zip)" "$I_TMP_BIN" "$I_TMP_BUILD"
+  cd "$I_TMP_BUILD"
+  ./configure $(f_get $1 b-conf) --prefix="$(f_get $1 home $I_HOME)/$1"
+  make $(f_get $1 b-make install)
+  cd -
 }
