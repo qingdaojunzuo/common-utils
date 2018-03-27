@@ -48,8 +48,9 @@ i_common() {
 
 i_docker_exist() {
   which docker > /dev/null 2>&1
-  [ $? -eq 0 ] && echo 1
-  [ $? -ne 0 ] && echo 0
+  local ret=$?
+  [ $ret -eq 0 ] && echo 1
+  [ $ret -ne 0 ] && echo 0
 }
 
 i_docker_() {
