@@ -1,5 +1,4 @@
 syntax enable
-set background=dark
 set nocompatible
 set nu
 set hlsearch
@@ -77,7 +76,7 @@ call vundle#end()
 " filetype plugin indent on
 filetype plugin on
 
-colorscheme dracula "badwolf Tomorrow-Night-Eighties
+colorscheme badwolf "Tomorrow-Night-Eighties
 
 " NERDTree configuration
 nmap <F1> :NERDTreeFind<CR>
