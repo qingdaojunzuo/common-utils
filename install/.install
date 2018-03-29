@@ -12,14 +12,15 @@ I_TMP_BIN=$I_TMP/tmp.tar.gz
 I_D=";"
 
 I_GO='bin=https://dl.google.com/go/go1.10.linux-amd64.tar.gz'${I_D}'run=i_go_'
-I_PY3='bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz'${I_D}'b-conf=--enable-optimizations --enable-shared'${I_D}'b-make=install'${I_D}'run=i_py3_'${I_D}
+I_PY3='bin=https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz'${I_D}'b-conf=--enable-optimizations --enable-shared LDFLAGS=-L$I_HOME/py3/lib'${I_D}'b-make=install'${I_D}'run=i_py3_'${I_D}
 I_PY2='bin=https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz'${I_D}'run=i_py2_'${I_D}'b-conf=--enable-shared --with-ensurepip=install --enable-unicode=ucs4'${I_D}
 I_JAVA='bin=--no-check-certificate -c --header \"Cookie: oraclelicense=accept-securebackup-cookie\" http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'
 I_VIM='bin=ftp://ftp.vim.org/pub/vim/unix/vim-8.0.tar.bz2'${I_D}'run=i_vim_'${I_D}'zip=bz2'${I_D}'b-conf=--with-features=huge --enable-perlinterp=yes --enable-multibyte --enable-cscope --enable-luainterp=yes --enable-rubyinterp=yes $(i_vim_py)'
 
 . .functions
 
-i_add_to_librc() { f_add_to_file "$1" "$2" "$I_U_HOME/.librc"; }
+i_add_to_librc() { f_add_env "$1" "$2" "$I_U_HOME/.librc"; }
+i_append_to_librc() { f_append_env "$1" "$2" "$I_U_HOME/.librc"; }
 
 i_proxy() {
   f_add_folder "$I_HOME/lib/bin/"
@@ -70,7 +71,9 @@ i_py_post() {
   export PYTHONHOME="$home"
   [[ ! -e "$home/lib64" ]] && ln -s "$home/lib" "$home/lib64"
   $(find "$home/bin" -name pip[0-9]\.[0-9]) install -U pip
-  unset PYTHONHOME 
+  unset PYTHONHOME
+  f_append_to_librc "LD_LIBRARY_PATH" "$home/lib64"
+  export LD_LIBRARY_PATH="$home/lib64:$LD_LIBRARY_PATH"
 }
 i_vim_py() {
   local py=
@@ -86,10 +89,12 @@ i_vim_py() {
 }
 
 i_py2_() {
+  f_add_folder "$I_HOME/py2/lib"
   f_build py2
   i_py_post py2
 }
 i_py3_() {
+  f_add_folder "$I_HOME/py3/lib"
   f_build py3
   i_py_post py3
 }
