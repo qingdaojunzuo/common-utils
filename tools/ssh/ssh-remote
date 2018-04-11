@@ -1,0 +1,14 @@
+#!/bin/bash
+
+ssh_key=$(echo ~)/.ssh/id_rsa
+ssh_hosts=ssh-hosts
+
+which sshpass > /dev/null 2>&1
+[ $? -ne 0 ] && yum install -y sshpass
+
+ssh-keygen -b 2048 -t rsa -f "$ssh_key" -q -N ""
+
+while IFS='' read -r line || [[ -n "$line" ]]; do
+  read -ra LINE <<< "$line"
+  sshpass -p ${LINE[1]} ssh-copy-id -i "$ssh_key" "${LINE[0]}" 
+done < "$ssh_hosts"
