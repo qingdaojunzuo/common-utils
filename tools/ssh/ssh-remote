@@ -4,7 +4,7 @@ ssh_key=$(echo ~)/.ssh/id_rsa
 ssh_hosts=ssh-hosts
 
 which sshpass > /dev/null 2>&1
-[ $? -ne 0 ] && yum install -y sshpass
+[ $? -ne 0 ] && sudo yum install -y sshpass
 
 ssh-keygen -b 2048 -t rsa -f "$ssh_key" -q -N ""
 
