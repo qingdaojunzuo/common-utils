@@ -1,0 +1,34 @@
+#!/bin/bash
+
+HADOOP_HOME=/home/calix/env/hadoop-3.1.0
+
+G_HADOOP=hadoop
+U_YARN=calix
+U_HDFS=calix
+U_MAPRED=calix
+
+# users
+sudo groupadd $G_HADOOP
+sudo useradd -g $G_HADOOP $U_YARN
+sudo useradd -g $G_HADOOP $U_HDFS
+sudo useradd -g $G_HADOOP $U_MAPRED
+
+# hdfs folders
+HDFS_BASE="$HADOOP_HOME/data/hadoop/hdfs"
+sudo mkdir -p "$HDFS_BASE/nn" "$HDFS_BASE/snn" "$HDFS_BASE/dn"
+sudo chown $U_HDFS:$G_HADOOP "$HDFS_BASE" -R
+
+# yarn folders
+YARN_BASE="$HADOOP_HOME/log/hadoop/yarn"
+sudo mkdir -p "$YARN_BASE"
+sudo chown $U_YARN:$G_HADOOP "$YARN_BASE" -R
+
+# hadoop logs
+LOG_BASE="$HADOOP_HOME/logs"
+sudo mkdir -p "$LOG_BASE"
+sudo chmod g+w "$LOG_BASE"
+sudo chown $U_YARN:$G_HADOOP "$LOG_BASE" -R
+
+# copy configuration
+HADOOP_ETC="$HADOOP_HOME/etc/hadoop/"
+[[ -e "etc" ]] && cp -rf etc/* "$HADOOP_ETC"
